@@ -6,7 +6,7 @@
   "description": "A clone of the classic FreeCell solitaire card game, built TDD-first with React + Vite + Vitest.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

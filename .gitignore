@@ -7,3 +7,6 @@ coverage
 .vscode/*
 !.vscode/extensions.json
 *.log
+
+# TypeScript incremental build info
+*.tsbuildinfo

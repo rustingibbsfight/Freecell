@@ -1,0 +1,207 @@
+:root {
+  --card-w: 74px;
+  --card-h: 104px;
+  --stack-offset: 26px;
+  --felt: #1f6f43;
+  --felt-dark: #175636;
+  --slot-border: rgba(255, 255, 255, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: radial-gradient(circle at 50% 0%, var(--felt), var(--felt-dark));
+  min-height: 100vh;
+  color: #f5f5f5;
+}
+
+.board {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.toolbar h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #f0f0f0;
+  color: #143;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.06s ease, background 0.15s ease;
+}
+
+.controls button:hover:not(:disabled) {
+  background: #fff;
+}
+
+.controls button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.freecells,
+.foundations {
+  display: flex;
+  gap: 8px;
+}
+
+.slot {
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 8px;
+}
+
+.cell,
+.foundation {
+  border: 2px dashed var(--slot-border);
+  background: rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.foundation-ghost {
+  font-size: 34px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.tableau {
+  display: grid;
+  grid-template-columns: repeat(8, var(--card-w));
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.column {
+  height: auto;
+  min-height: var(--card-h);
+  border-radius: 8px;
+  position: relative;
+  padding-bottom: 40px;
+}
+
+.card {
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #bbb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card.red {
+  color: #c0392b;
+}
+
+.card.black {
+  color: #1a1a1a;
+}
+
+/* Cascade: each card after the first overlaps the one above, leaving a
+   --stack-offset sliver (its top corner) visible. */
+.column .card + .card {
+  margin-top: calc(var(--stack-offset) - var(--card-h));
+}
+
+.card .corner {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card .corner.bottom {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card .pip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+}
+
+.card.stacked .pip,
+.card.stacked .corner.bottom {
+  display: none;
+}
+
+.card.selected {
+  outline: 3px solid #ffd54a;
+  outline-offset: -1px;
+  box-shadow: 0 0 10px 2px rgba(255, 213, 74, 0.7);
+}
+
+.status {
+  margin-top: 24px;
+  text-align: center;
+  min-height: 32px;
+}
+
+.win-banner {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffe27a;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.message {
+  color: #ffd0d0;
+  font-weight: 600;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

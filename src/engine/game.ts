@@ -119,10 +119,12 @@ export function applyMove(state: GameState, move: Move): GameState {
   let moving: Card[]
   if (from.zone === 'tableau') {
     moving = next.tableau[from.index].splice(next.tableau[from.index].length - count)
-  } else {
-    // freecell
+  } else if (from.zone === 'freecell') {
     moving = [next.freeCells[from.index]!]
     next.freeCells[from.index] = null
+  } else {
+    // Unreachable: isLegalMove rejects foundation sources.
+    throw new Error('Cannot move a card off a foundation')
   }
 
   // Place them at the destination.
