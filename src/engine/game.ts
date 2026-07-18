@@ -1,4 +1,4 @@
-import { Card, GameState, Move, Position, SUITS } from './types'
+import { Card, GameState, Move, Position, Rank, SUITS } from './types'
 import { createDeck, color } from './deck'
 import { seededShuffle } from './shuffle'
 import { deal } from './deal'
@@ -56,8 +56,18 @@ function movingCards(state: GameState, from: Position, count: number): Card[] | 
     const c = state.freeCells[from.index]
     return c ? [c] : null
   }
-  // Cards are never moved off a foundation.
+  // Foundation: the single exposed top card can be pulled back into play.
+  if (count === 1) {
+    const rank = state.foundations[from.suit]
+    if (rank === 0) return null
+    return [{ suit: from.suit, rank, id: `${from.suit}-${rank}` }]
+  }
   return null
+}
+
+/** Decrement a foundation rank by one (0 stays 0). */
+function prevRank(rank: Rank | 0): Rank | 0 {
+  return (rank === 0 ? 0 : rank - 1) as Rank | 0
 }
 
 /** Is `move` legal in `state`? Pure predicate — never throws. */
@@ -65,7 +75,8 @@ export function isLegalMove(state: GameState, move: Move): boolean {
   const { from, to } = move
   const count = move.count ?? 1
 
-  if (from.zone === 'foundation') return false
+  // A card may be pulled back off a foundation, but never onto another foundation.
+  if (from.zone === 'foundation' && to.zone === 'foundation') return false
 
   const cards = movingCards(state, from, count)
   if (!cards || cards.length === 0) return false
@@ -123,8 +134,10 @@ export function applyMove(state: GameState, move: Move): GameState {
     moving = [next.freeCells[from.index]!]
     next.freeCells[from.index] = null
   } else {
-    // Unreachable: isLegalMove rejects foundation sources.
-    throw new Error('Cannot move a card off a foundation')
+    // Foundation: pull the exposed top card back into play.
+    const rank = next.foundations[from.suit] as Rank
+    moving = [{ suit: from.suit, rank, id: `${from.suit}-${rank}` }]
+    next.foundations[from.suit] = prevRank(rank)
   }
 
   // Place them at the destination.

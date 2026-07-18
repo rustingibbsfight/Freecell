@@ -56,6 +56,7 @@ export function CardView({
     <div
       className={cls}
       role="button"
+      data-card-id={card.id}
       aria-label={`${rankLabel(card.rank)} of ${card.suit}`}
       onPointerDown={onPointerDown}
       onClick={(e) => {

@@ -46,6 +46,7 @@ export interface UseGame {
   hintSourceIds: ReadonlySet<string>
   hintTargetKey: string | null
   dragging: boolean
+  animate: boolean
   won: boolean
   message: string | null
   canUndo: boolean
@@ -69,10 +70,13 @@ export function useGame(initialSeed?: number): UseGame {
   const [dragging, setDragging] = useState(false)
   const [hint, setHint] = useState<Hint | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  // True when the latest state change is a move worth animating (vs a deal/undo).
+  const [animate, setAnimate] = useState(false)
 
   const push = useCallback((next: GameState, prev: GameState) => {
     setHistory((h) => [...h, prev])
     setState(next)
+    setAnimate(true)
   }, [])
 
   /** Card ids that a source position would pick up. */
@@ -110,6 +114,16 @@ export function useGame(initialSeed?: number): UseGame {
           ids: run.map((c) => c.id),
         }
       }
+      if (target.kind === 'foundation') {
+        // The exposed top foundation card can be picked up and pulled back.
+        const rank = state.foundations[target.suit]
+        if (rank === 0) return null
+        return {
+          from: { zone: 'foundation', suit: target.suit },
+          count: 1,
+          ids: [`${target.suit}-${rank}`],
+        }
+      }
       return null
     },
     [state],
@@ -135,7 +149,9 @@ export function useGame(initialSeed?: number): UseGame {
     (from: Position, to: Position, count: number): boolean => {
       const move = { from, to, count }
       if (!isLegalMove(state, move)) return false
-      const finalState = autoMoveToFoundations(applyMove(state, move))
+      const moved = applyMove(state, move)
+      // Don't auto-play after a pull-back, or the card would fly right back home.
+      const finalState = from.zone === 'foundation' ? moved : autoMoveToFoundations(moved)
       push(finalState, state)
       setHint(null)
       return true
@@ -266,6 +282,7 @@ export function useGame(initialSeed?: number): UseGame {
       setDragging(false)
       setHint(null)
       setMessage(null)
+      setAnimate(false)
       return h.slice(0, -1)
     })
   }, [])
@@ -277,6 +294,7 @@ export function useGame(initialSeed?: number): UseGame {
     setDragging(false)
     setHint(null)
     setMessage(null)
+    setAnimate(false)
   }, [])
 
   const deal = useCallback(
@@ -315,6 +333,7 @@ export function useGame(initialSeed?: number): UseGame {
     hintSourceIds,
     hintTargetKey: hint?.targetKey ?? null,
     dragging,
+    animate,
     won: isWon(state),
     message,
     canUndo: history.length > 0,

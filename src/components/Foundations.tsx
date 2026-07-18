@@ -1,3 +1,4 @@
+import { PointerEvent } from 'react'
 import { GameState, Suit, SUITS } from '../engine/types'
 import { CardView, rankLabel } from './CardView'
 import { ClickTarget } from '../hooks/useGame'
@@ -11,17 +12,29 @@ const SUIT_GLYPH: Record<Suit, string> = {
 
 interface Props {
   state: GameState
+  selectedIds: ReadonlySet<string>
   legalTargetKeys: ReadonlySet<string>
   hintTargetKey: string | null
+  dragging: boolean
   onClick: (t: ClickTarget) => void
+  onCardPointerDown: (t: ClickTarget, e: PointerEvent) => void
 }
 
-export function Foundations({ state, legalTargetKeys, hintTargetKey, onClick }: Props) {
+export function Foundations({
+  state,
+  selectedIds,
+  legalTargetKeys,
+  hintTargetKey,
+  dragging,
+  onClick,
+  onCardPointerDown,
+}: Props) {
   return (
     <div className="foundations" aria-label="foundations">
       {SUITS.map((suit) => {
         const rank = state.foundations[suit]
         const key = `foundation:${suit}`
+        const id = `${suit}-${rank}`
         const cls = [
           'foundation',
           'slot',
@@ -41,8 +54,11 @@ export function Foundations({ state, legalTargetKeys, hintTargetKey, onClick }: 
           >
             {rank > 0 ? (
               <CardView
-                card={{ suit, rank: rank as never, id: `${suit}-${rank}` }}
+                card={{ suit, rank: rank as never, id }}
+                selected={selectedIds.has(id)}
+                dragging={dragging && selectedIds.has(id)}
                 onClick={() => onClick({ kind: 'foundation', suit })}
+                onPointerDown={(e) => onCardPointerDown({ kind: 'foundation', suit }, e)}
               />
             ) : (
               <span className="foundation-ghost">{SUIT_GLYPH[suit]}</span>

@@ -20,7 +20,12 @@ npm run dev      # open the printed localhost URL
 - **Double-click** a card (or run) for a *smart move*: it flies to the single best legal
   spot — its foundation first, else building onto another column, else parking in an
   empty column or free cell.
-- After every move, safe cards **auto-play** to the foundations.
+- After every move, safe cards **auto-play** to the foundations, sliding home with a
+  short animation.
+- **Pull cards back**: a card already sent to a foundation can be dragged (or clicked)
+  back into play onto a tableau column or free cell.
+- **Mobile-ready**: cards scale to fit any screen (all 8 columns visible on an iPhone),
+  with safe-area insets and touch drag; installable as a PWA and playable offline.
 - Toolbar: **New Game**, **Restart** (same deal), **Undo** (reverts a move and its
   auto-plays together), **Hint** (highlights a useful move), **Auto-finish**.
 - Win by moving all 52 cards to the four foundations, each built up Ace→King by suit.

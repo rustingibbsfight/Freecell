@@ -1,5 +1,5 @@
-import { PointerEvent as ReactPointerEvent, useRef, useState } from 'react'
-import { Card, Suit } from '../engine/types'
+import { PointerEvent as ReactPointerEvent, useLayoutEffect, useRef, useState } from 'react'
+import { Card, Rank, Suit } from '../engine/types'
 import { isValidRun } from '../engine/rules'
 import { useGame, ClickTarget } from '../hooks/useGame'
 import { CardView } from './CardView'
@@ -37,6 +37,45 @@ export function Board({ seed }: BoardProps) {
   const [ghost, setGhost] = useState<GhostState | null>(null)
   const justDragged = useRef(false)
 
+  // FLIP animation: after each move, slide every card that changed position from
+  // its old spot to its new one — this also animates the auto-advance flights.
+  const prevRects = useRef<Map<string, DOMRect>>(new Map())
+  const animateRef = useRef(game.animate)
+  animateRef.current = game.animate
+
+  useLayoutEffect(() => {
+    const reduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-card-id]'))
+    const next = new Map<string, DOMRect>()
+    for (const el of nodes) next.set(el.dataset.cardId!, el.getBoundingClientRect())
+
+    if (animateRef.current && !reduce && typeof Element.prototype.animate === 'function') {
+      for (const el of nodes) {
+        const id = el.dataset.cardId!
+        const prev = prevRects.current.get(id)
+        if (!prev) continue
+        const rect = next.get(id)!
+        const dx = prev.left - rect.left
+        const dy = prev.top - rect.top
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue
+        el.style.zIndex = '60'
+        const anim = el.animate(
+          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+          { duration: 240, easing: 'cubic-bezier(.2,.7,.3,1)' },
+        )
+        const clear = () => {
+          el.style.zIndex = ''
+        }
+        anim.onfinish = clear
+        anim.oncancel = clear
+      }
+    }
+    prevRects.current = next
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.state])
+
   /** Cards a drag from this target would carry (bottom→top). */
   const cardsForTarget = (target: ClickTarget): Card[] => {
     const g = gameRef.current
@@ -47,6 +86,12 @@ export function Board({ seed }: BoardProps) {
     if (target.kind === 'tableau-card') {
       const run = g.state.tableau[target.col].slice(target.index)
       return isValidRun(run) ? run : []
+    }
+    if (target.kind === 'foundation') {
+      const rank = g.state.foundations[target.suit]
+      return rank > 0
+        ? [{ suit: target.suit, rank: rank as Rank, id: `${target.suit}-${rank}` }]
+        : []
     }
     return []
   }
@@ -139,9 +184,12 @@ export function Board({ seed }: BoardProps) {
         <FreeCells {...zoneProps} />
         <Foundations
           state={game.state}
+          selectedIds={game.selectedIds}
           legalTargetKeys={game.legalTargetKeys}
           hintTargetKey={game.hintTargetKey}
+          dragging={game.dragging}
           onClick={handleClick}
+          onCardPointerDown={onCardPointerDown}
         />
       </div>
 
@@ -161,8 +209,8 @@ export function Board({ seed }: BoardProps) {
           style={{ left: ghost.x, top: ghost.y }}
           aria-hidden="true"
         >
-          {ghost.cards.map((card, i) => (
-            <div key={card.id} className="ghost-card" style={{ marginTop: i === 0 ? 0 : -78 }}>
+          {ghost.cards.map((card) => (
+            <div key={card.id} className="ghost-card">
               <CardView card={card} />
             </div>
           ))}
