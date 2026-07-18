@@ -44,4 +44,34 @@ describe('<Board>', () => {
     // Undo becomes available after a move.
     expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
   })
+
+  it('highlights legal drop targets when a card is selected', async () => {
+    const user = userEvent.setup()
+    render(<Board seed={1} />)
+    const col0 = screen.getByTestId('column-0')
+    const cards = within(col0).getAllByRole('button', { name: / of / })
+    await user.click(cards[cards.length - 1])
+
+    // A lone card can always go to an empty free cell, so cells light up.
+    const freeCellsRegion = screen.getByLabelText('free cells')
+    expect(freeCellsRegion.querySelectorAll('.cell.droppable').length).toBeGreaterThan(0)
+  })
+
+  it('double-clicking a card auto-moves it off its column', async () => {
+    const user = userEvent.setup()
+    render(<Board seed={1} />)
+    const col0 = screen.getByTestId('column-0')
+    const cards = within(col0).getAllByRole('button', { name: / of / })
+    const top = cards[cards.length - 1]
+    const label = top.getAttribute('aria-label')!
+
+    await user.dblClick(top)
+    expect(within(col0).queryByLabelText(label)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  })
+
+  it('has a Hint button', () => {
+    render(<Board seed={1} />)
+    expect(screen.getByRole('button', { name: 'Hint' })).toBeInTheDocument()
+  })
 })

@@ -15,10 +15,14 @@ npm run dev      # open the printed localhost URL
 ```
 
 - **Click** a card (or a valid descending, alternating-color run) to select it, then
-  **click a destination** — a free cell, a foundation, or another tableau column.
-- **Double-click** a card to send it straight to its foundation if the move is legal.
-- Toolbar: **New Game**, **Restart** (same deal), **Undo**, **Auto-finish** (sweeps
-  safe cards home).
+  **click a destination** — legal drop targets glow green. Or **drag** the card/run
+  straight onto a destination (works with mouse and touch).
+- **Double-click** a card (or run) for a *smart move*: it flies to the single best legal
+  spot — its foundation first, else building onto another column, else parking in an
+  empty column or free cell.
+- After every move, safe cards **auto-play** to the foundations.
+- Toolbar: **New Game**, **Restart** (same deal), **Undo** (reverts a move and its
+  auto-plays together), **Hint** (highlights a useful move), **Auto-finish**.
 - Win by moving all 52 cards to the four foundations, each built up Ace→King by suit.
 
 ## Rules implemented

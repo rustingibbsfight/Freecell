@@ -209,3 +209,111 @@ export function autoMoveToFoundations(state: GameState): GameState {
   }
   return current
 }
+
+/** Every candidate destination position on the board. */
+function allDestinations(state: GameState): Position[] {
+  const out: Position[] = []
+  for (let i = 0; i < state.freeCells.length; i++) out.push({ zone: 'freecell', index: i })
+  for (const suit of SUITS) out.push({ zone: 'foundation', suit })
+  for (let i = 0; i < state.tableau.length; i++) out.push({ zone: 'tableau', index: i })
+  return out
+}
+
+/** All positions a card/run at `from` can legally move to. */
+export function legalDestinations(
+  state: GameState,
+  from: Position,
+  count = 1,
+): Position[] {
+  return allDestinations(state).filter((to) => isLegalMove(state, { from, to, count }))
+}
+
+/**
+ * The single smartest legal target for a card/run at `from`, or null if there
+ * is no legal move. Ranking: foundation (send home) → build onto a non-empty
+ * tableau column (leftmost) → park in an empty column (leftmost) → free cell.
+ */
+export function bestDestination(
+  state: GameState,
+  from: Position,
+  count = 1,
+): Position | null {
+  const dests = legalDestinations(state, from, count)
+
+  const foundation = dests.find((d) => d.zone === 'foundation')
+  if (foundation) return foundation
+
+  const tableauByIndex = (empty: boolean): Position | undefined =>
+    dests
+      .filter(
+        (d): d is Extract<Position, { zone: 'tableau' }> =>
+          d.zone === 'tableau' && state.tableau[d.index].length === 0 === empty,
+      )
+      .sort((a, b) => a.index - b.index)[0]
+
+  const build = tableauByIndex(false)
+  if (build) return build
+
+  const park = tableauByIndex(true)
+  if (park) return park
+
+  const freeCell = dests
+    .filter((d): d is Extract<Position, { zone: 'freecell' }> => d.zone === 'freecell')
+    .sort((a, b) => a.index - b.index)[0]
+  return freeCell ?? null
+}
+
+/** Length of the longest valid movable run at the top of a column. */
+function movableRunLength(col: Card[]): number {
+  if (col.length === 0) return 0
+  let len = 1
+  for (let i = col.length - 1; i >= 1; i--) {
+    const lower = col[i]
+    const upper = col[i - 1]
+    if (color(lower) !== color(upper) && lower.rank === upper.rank - 1) len++
+    else break
+  }
+  return len
+}
+
+/** Movable sources: each free-cell card, and each valid top-run of each column. */
+function movableSources(state: GameState): { from: Position; count: number }[] {
+  const sources: { from: Position; count: number }[] = []
+  for (let i = 0; i < state.freeCells.length; i++) {
+    if (state.freeCells[i]) sources.push({ from: { zone: 'freecell', index: i }, count: 1 })
+  }
+  for (let i = 0; i < state.tableau.length; i++) {
+    const run = movableRunLength(state.tableau[i])
+    // Larger runs first so a build hint prefers relocating a whole sequence.
+    for (let k = run; k >= 1; k--) {
+      sources.push({ from: { zone: 'tableau', index: i }, count: k })
+    }
+  }
+  return sources
+}
+
+/**
+ * Suggest one genuinely useful legal move (never a "parking" move to a free cell
+ * or empty column). Prefers sending a card home, then building onto another
+ * column. Returns null when no such move exists.
+ */
+export function findHint(state: GameState): Move | null {
+  const sources = movableSources(state)
+
+  // Pass 1: a card that can go home.
+  for (const { from, count } of sources) {
+    if (count !== 1) continue
+    const home = legalDestinations(state, from, 1).find((d) => d.zone === 'foundation')
+    if (home) return { from, to: home, count: 1 }
+  }
+
+  // Pass 2: a card/run that builds onto a non-empty tableau column.
+  for (const { from, count } of sources) {
+    const build = legalDestinations(state, from, count).find(
+      (d) => d.zone === 'tableau' && state.tableau[d.index].length > 0,
+    )
+    if (build) return { from, to: build, count }
+  }
+
+  return null
+}

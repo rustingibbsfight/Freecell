@@ -173,10 +173,61 @@ body {
   display: none;
 }
 
+.card {
+  touch-action: none; /* let us handle drags without the page scrolling */
+}
+
 .card.selected {
   outline: 3px solid #ffd54a;
   outline-offset: -1px;
   box-shadow: 0 0 10px 2px rgba(255, 213, 74, 0.7);
+}
+
+.card.dragging {
+  opacity: 0.4;
+}
+
+.card.hint-source {
+  outline: 3px solid #4ac6ff;
+  outline-offset: -1px;
+  box-shadow: 0 0 12px 3px rgba(74, 198, 255, 0.75);
+}
+
+/* Legal drop targets glow while a card is selected or being dragged. */
+.slot.droppable {
+  box-shadow: 0 0 0 3px rgba(122, 231, 160, 0.9), 0 0 14px 3px rgba(122, 231, 160, 0.5);
+}
+
+.cell.droppable,
+.foundation.droppable {
+  border-color: rgba(122, 231, 160, 0.95);
+}
+
+.slot.hint-target {
+  box-shadow: 0 0 0 3px #4ac6ff, 0 0 16px 4px rgba(74, 198, 255, 0.6);
+  animation: hint-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes hint-pulse {
+  from {
+    box-shadow: 0 0 0 3px rgba(74, 198, 255, 0.6), 0 0 10px 2px rgba(74, 198, 255, 0.4);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(74, 198, 255, 1), 0 0 20px 6px rgba(74, 198, 255, 0.7);
+  }
+}
+
+/* Floating copy of the card(s) that follows the pointer during a drag. */
+.drag-ghost {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  transform: translate(-37px, -20px) rotate(2deg);
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.45));
+}
+
+.drag-ghost .ghost-card .card {
+  cursor: grabbing;
 }
 
 .status {

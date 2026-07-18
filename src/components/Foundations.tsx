@@ -11,18 +11,31 @@ const SUIT_GLYPH: Record<Suit, string> = {
 
 interface Props {
   state: GameState
+  legalTargetKeys: ReadonlySet<string>
+  hintTargetKey: string | null
   onClick: (t: ClickTarget) => void
 }
 
-export function Foundations({ state, onClick }: Props) {
+export function Foundations({ state, legalTargetKeys, hintTargetKey, onClick }: Props) {
   return (
     <div className="foundations" aria-label="foundations">
       {SUITS.map((suit) => {
         const rank = state.foundations[suit]
+        const key = `foundation:${suit}`
+        const cls = [
+          'foundation',
+          'slot',
+          suit,
+          legalTargetKeys.has(key) ? 'droppable' : '',
+          hintTargetKey === key ? 'hint-target' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
         return (
           <div
             key={suit}
-            className={`foundation slot ${suit}`}
+            className={cls}
+            data-drop={key}
             aria-label={`${suit} foundation`}
             onClick={() => onClick({ kind: 'foundation', suit })}
           >

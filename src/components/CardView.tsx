@@ -1,3 +1,4 @@
+import { PointerEvent } from 'react'
 import { Card, Suit } from '../engine/types'
 import { color } from '../engine/deck'
 
@@ -23,16 +24,30 @@ interface CardViewProps {
   card: Card
   selected?: boolean
   stacked?: boolean
+  dragging?: boolean
+  hint?: boolean
   onClick?: () => void
   onDoubleClick?: () => void
+  onPointerDown?: (e: PointerEvent) => void
 }
 
-export function CardView({ card, selected, stacked, onClick, onDoubleClick }: CardViewProps) {
+export function CardView({
+  card,
+  selected,
+  stacked,
+  dragging,
+  hint,
+  onClick,
+  onDoubleClick,
+  onPointerDown,
+}: CardViewProps) {
   const cls = [
     'card',
     color(card),
     selected ? 'selected' : '',
     stacked ? 'stacked' : '',
+    dragging ? 'dragging' : '',
+    hint ? 'hint-source' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -42,6 +57,7 @@ export function CardView({ card, selected, stacked, onClick, onDoubleClick }: Ca
       className={cls}
       role="button"
       aria-label={`${rankLabel(card.rank)} of ${card.suit}`}
+      onPointerDown={onPointerDown}
       onClick={(e) => {
         e.stopPropagation()
         onClick?.()
