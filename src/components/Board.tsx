@@ -175,7 +175,13 @@ export function Board({ seed }: BoardProps) {
           <button onClick={game.undo} disabled={!game.canUndo}>
             Undo
           </button>
-          <button onClick={game.showHint}>Hint</button>
+          <button
+            className={game.hintBusy ? 'busy' : undefined}
+            onClick={game.showHint}
+            disabled={game.hintBusy}
+          >
+            Hint
+          </button>
           <button onClick={game.autoFinish}>Auto-finish</button>
         </div>
       </header>
