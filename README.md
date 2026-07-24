@@ -27,7 +27,11 @@ npm run dev      # open the printed localhost URL
 - **Mobile-ready**: cards scale to fit any screen (all 8 columns visible on an iPhone),
   with safe-area insets and touch drag; installable as a PWA and playable offline.
 - Toolbar: **New Game**, **Restart** (same deal), **Undo** (reverts a move and its
-  auto-plays together), **Hint** (highlights a useful move), **Auto-finish**.
+  auto-plays together), **Hint**, **Auto-finish**.
+- **Strategic Hint**: a built-in weighted-A\* solver looks many moves ahead — staging
+  through free cells and empty columns — and highlights the first move of a line toward
+  victory (not a shuffle that loops). Following the hint wins the large majority of
+  deals outright.
 - Win by moving all 52 cards to the four foundations, each built up Ace→King by suit.
 
 ## Rules implemented

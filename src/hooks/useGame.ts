@@ -8,8 +8,8 @@ import {
   autoMoveToFoundations,
   bestDestination,
   legalDestinations,
-  findHint,
 } from '../engine/game'
+import { findStrategicHint } from '../engine/solver'
 import { isValidRun } from '../engine/rules'
 
 /** A click/drop target coming from the board, described semantically. */
@@ -262,7 +262,7 @@ export function useGame(initialSeed?: number): UseGame {
   }, [])
 
   const showHint = useCallback(() => {
-    const h = findHint(state)
+    const h = findStrategicHint(state)
     setSelection(null)
     if (!h) {
       setHint(null)
@@ -270,7 +270,10 @@ export function useGame(initialSeed?: number): UseGame {
       return
     }
     setMessage(null)
-    setHint({ sourceIds: movingIds(h.from, h.count ?? 1), targetKey: positionKey(h.to) })
+    setHint({
+      sourceIds: movingIds(h.move.from, h.move.count ?? 1),
+      targetKey: positionKey(h.move.to),
+    })
   }, [state, movingIds])
 
   const undo = useCallback(() => {

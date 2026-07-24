@@ -277,7 +277,7 @@ export function bestDestination(
 }
 
 /** Length of the longest valid movable run at the top of a column. */
-function movableRunLength(col: Card[]): number {
+export function movableRunLength(col: Card[]): number {
   if (col.length === 0) return 0
   let len = 1
   for (let i = col.length - 1; i >= 1; i--) {
