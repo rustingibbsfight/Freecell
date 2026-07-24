@@ -86,6 +86,12 @@ body {
   cursor: default;
 }
 
+/* Fixed width so swapping "Hint" ⇄ "Thinking…" never reflows the toolbar. */
+.controls button.hint-btn {
+  min-width: 7.5em;
+  text-align: center;
+}
+
 .controls button.thinking {
   opacity: 1;
   color: #0a5;
