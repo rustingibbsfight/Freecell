@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GameState, Position, Suit } from '../engine/types'
 import {
   newGame,
@@ -9,7 +9,7 @@ import {
   bestDestination,
   legalDestinations,
 } from '../engine/game'
-import { findStrategicHint } from '../engine/solver'
+import { findStrategicHint, StrategicHint } from '../engine/solver'
 import { isValidRun } from '../engine/rules'
 
 /** A click/drop target coming from the board, described semantically. */
@@ -45,6 +45,7 @@ export interface UseGame {
   legalTargetKeys: ReadonlySet<string>
   hintSourceIds: ReadonlySet<string>
   hintTargetKey: string | null
+  hintThinking: boolean
   dragging: boolean
   animate: boolean
   won: boolean
@@ -72,6 +73,10 @@ export function useGame(initialSeed?: number): UseGame {
   const [message, setMessage] = useState<string | null>(null)
   // True when the latest state change is a move worth animating (vs a deal/undo).
   const [animate, setAnimate] = useState(false)
+  // Hint solving runs off the main thread; this flag drives the button state.
+  const [hintThinking, setHintThinking] = useState(false)
+  const workerRef = useRef<Worker | null>(null)
+  const hintReq = useRef(0)
 
   const push = useCallback((next: GameState, prev: GameState) => {
     setHistory((h) => [...h, prev])
@@ -154,6 +159,8 @@ export function useGame(initialSeed?: number): UseGame {
       const finalState = from.zone === 'foundation' ? moved : autoMoveToFoundations(moved)
       push(finalState, state)
       setHint(null)
+      hintReq.current++ // cancel any in-flight hint for the old board
+      setHintThinking(false)
       return true
     },
     [state, push],
@@ -261,20 +268,60 @@ export function useGame(initialSeed?: number): UseGame {
     setSelection(null)
   }, [])
 
+  const applyHintResult = useCallback(
+    (h: StrategicHint | null) => {
+      if (!h) {
+        setHint(null)
+        setMessage('No moves available')
+        return
+      }
+      setMessage(null)
+      setHint({
+        sourceIds: movingIds(h.move.from, h.move.count ?? 1),
+        targetKey: positionKey(h.move.to),
+      })
+    },
+    [movingIds],
+  )
+
+  /** Lazily create the hint worker; returns null where Workers aren't available. */
+  const getWorker = useCallback((): Worker | null => {
+    if (typeof Worker === 'undefined') return null
+    if (!workerRef.current) {
+      try {
+        workerRef.current = new Worker(new URL('../engine/hint.worker.ts', import.meta.url), {
+          type: 'module',
+        })
+      } catch {
+        return null
+      }
+    }
+    return workerRef.current
+  }, [])
+
+  useEffect(() => () => workerRef.current?.terminate(), [])
+
   const showHint = useCallback(() => {
-    const h = findStrategicHint(state)
     setSelection(null)
-    if (!h) {
-      setHint(null)
-      setMessage('No moves available')
+    const worker = getWorker()
+    if (!worker) {
+      // No Worker (tests / unsupported): solve synchronously.
+      applyHintResult(findStrategicHint(state))
       return
     }
+    const reqId = ++hintReq.current
+    setHint(null)
     setMessage(null)
-    setHint({
-      sourceIds: movingIds(h.move.from, h.move.count ?? 1),
-      targetKey: positionKey(h.move.to),
-    })
-  }, [state, movingIds])
+    setHintThinking(true)
+    const onMessage = (e: MessageEvent<{ reqId: number; hint: StrategicHint | null }>) => {
+      if (e.data.reqId !== hintReq.current) return // superseded by a newer request/move
+      worker.removeEventListener('message', onMessage)
+      setHintThinking(false)
+      applyHintResult(e.data.hint)
+    }
+    worker.addEventListener('message', onMessage)
+    worker.postMessage({ reqId, state })
+  }, [state, getWorker, applyHintResult])
 
   const undo = useCallback(() => {
     setHistory((h) => {
@@ -286,6 +333,8 @@ export function useGame(initialSeed?: number): UseGame {
       setHint(null)
       setMessage(null)
       setAnimate(false)
+      hintReq.current++
+      setHintThinking(false)
       return h.slice(0, -1)
     })
   }, [])
@@ -298,6 +347,8 @@ export function useGame(initialSeed?: number): UseGame {
     setHint(null)
     setMessage(null)
     setAnimate(false)
+    hintReq.current++
+    setHintThinking(false)
   }, [])
 
   const deal = useCallback(
@@ -335,6 +386,7 @@ export function useGame(initialSeed?: number): UseGame {
     legalTargetKeys,
     hintSourceIds,
     hintTargetKey: hint?.targetKey ?? null,
+    hintThinking,
     dragging,
     animate,
     won: isWon(state),

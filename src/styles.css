@@ -86,6 +86,21 @@ body {
   cursor: default;
 }
 
+.controls button.thinking {
+  opacity: 1;
+  color: #0a5;
+  animation: thinking-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% {
+    background: #eaf7ef;
+  }
+  50% {
+    background: #bce9cd;
+  }
+}
+
 .top-row {
   display: flex;
   justify-content: space-between;
