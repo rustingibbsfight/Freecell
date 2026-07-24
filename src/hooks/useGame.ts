@@ -45,7 +45,6 @@ export interface UseGame {
   legalTargetKeys: ReadonlySet<string>
   hintSourceIds: ReadonlySet<string>
   hintTargetKey: string | null
-  hintThinking: boolean
   dragging: boolean
   animate: boolean
   won: boolean
@@ -73,8 +72,8 @@ export function useGame(initialSeed?: number): UseGame {
   const [message, setMessage] = useState<string | null>(null)
   // True when the latest state change is a move worth animating (vs a deal/undo).
   const [animate, setAnimate] = useState(false)
-  // Hint solving runs off the main thread; this flag drives the button state.
-  const [hintThinking, setHintThinking] = useState(false)
+  // Hint solving runs off the main thread (Web Worker) — silently, with no UI
+  // busy state. hintReq guards against applying a stale/superseded result.
   const workerRef = useRef<Worker | null>(null)
   const hintReq = useRef(0)
 
@@ -160,7 +159,6 @@ export function useGame(initialSeed?: number): UseGame {
       push(finalState, state)
       setHint(null)
       hintReq.current++ // cancel any in-flight hint for the old board
-      setHintThinking(false)
       return true
     },
     [state, push],
@@ -312,11 +310,9 @@ export function useGame(initialSeed?: number): UseGame {
     const reqId = ++hintReq.current
     setHint(null)
     setMessage(null)
-    setHintThinking(true)
     const onMessage = (e: MessageEvent<{ reqId: number; hint: StrategicHint | null }>) => {
       if (e.data.reqId !== hintReq.current) return // superseded by a newer request/move
       worker.removeEventListener('message', onMessage)
-      setHintThinking(false)
       applyHintResult(e.data.hint)
     }
     worker.addEventListener('message', onMessage)
@@ -334,7 +330,6 @@ export function useGame(initialSeed?: number): UseGame {
       setMessage(null)
       setAnimate(false)
       hintReq.current++
-      setHintThinking(false)
       return h.slice(0, -1)
     })
   }, [])
@@ -348,7 +343,6 @@ export function useGame(initialSeed?: number): UseGame {
     setMessage(null)
     setAnimate(false)
     hintReq.current++
-    setHintThinking(false)
   }, [])
 
   const deal = useCallback(
@@ -386,7 +380,6 @@ export function useGame(initialSeed?: number): UseGame {
     legalTargetKeys,
     hintSourceIds,
     hintTargetKey: hint?.targetKey ?? null,
-    hintThinking,
     dragging,
     animate,
     won: isWon(state),

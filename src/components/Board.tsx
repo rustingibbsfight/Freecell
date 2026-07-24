@@ -175,13 +175,7 @@ export function Board({ seed }: BoardProps) {
           <button onClick={game.undo} disabled={!game.canUndo}>
             Undo
           </button>
-          <button
-            className={`hint-btn${game.hintThinking ? ' thinking' : ''}`}
-            onClick={game.showHint}
-            disabled={game.hintThinking}
-          >
-            {game.hintThinking ? 'Thinking…' : 'Hint'}
-          </button>
+          <button onClick={game.showHint}>Hint</button>
           <button onClick={game.autoFinish}>Auto-finish</button>
         </div>
       </header>
